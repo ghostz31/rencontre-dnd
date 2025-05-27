@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MONSTRES_DATABASE, TYPES_MONSTRE, CRS_DISPONIBLES } from './data/monsters';
 import { Plus, Search, Minus, Save, Heart, Eye, Dice6, Undo2, ArrowRight, X, Trash2, Home } from 'lucide-react';
 import { calculerDifficulte, genererInitiative } from './utils/encounterUtils';
-import { getPlayerGroups } from './data/playerGroups';
 import { Link } from 'react-router-dom';
+import './combat/combat.css';
 
 // Définition des conditions disponibles
 const CONDITIONS = [
@@ -70,6 +70,7 @@ export default function CombatManager() {
 
   // État pour la gestion des groupes de joueurs
   const [playerGroups, setPlayerGroups] = useState([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
   const [selectedPlayerGroupId, setSelectedPlayerGroupId] = useState('');
   const [selectedPlayerGroup, setSelectedPlayerGroup] = useState(null);
 
@@ -104,11 +105,38 @@ export default function CombatManager() {
     }
   }, []);
 
-  // Lorsqu'un groupe est sélectionné, pré-remplir les PJ dans l'initiative
+  // Charger les groupes de joueurs au démarrage
   useEffect(() => {
+    setIsLoadingGroups(true);
+    try {
+      const savedGroups = JSON.parse(localStorage.getItem('dnd-groupes-joueurs') || '[]');
+      const savedOldGroups = JSON.parse(localStorage.getItem('dnd-player-groups') || '[]');
+      
+      // Fusionner les groupes en évitant les doublons
+      const allGroups = [...savedGroups];
+      savedOldGroups.forEach(oldGroup => {
+        if (!allGroups.some(g => g.id === oldGroup.id)) {
+          allGroups.push(oldGroup);
+        }
+      });
+      
+      setPlayerGroups(allGroups);
+    } catch (error) {
+      console.error('Erreur lors du chargement des groupes:', error);
+      setPlayerGroups([]);
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  }, []);
+
+  // Dans l'effet qui gère la sélection du groupe
+  useEffect(() => {
+    console.log('playerGroups:', playerGroups);
+    console.log('selectedPlayerGroupId:', selectedPlayerGroupId);
     if (selectedPlayerGroupId) {
       const group = playerGroups.find(g => g.id === selectedPlayerGroupId);
-      setSelectedPlayerGroup(group);
+      console.log('Groupe trouvé:', group);
+      setSelectedPlayerGroup(group || null);
       if (group) {
         // Créer les PJ à partir du groupe
         const pjs = group.joueurs.map((j, idx) => ({
@@ -122,9 +150,10 @@ export default function CombatManager() {
           niveau: j.niveau || 1,
           avatar: j.avatar || '',
           classes: j.classes || '',
-          dndbeyondUrl: j.dndbeyondUrl || '',
-          dexterite: 10, // Peut être amélioré si on synchronise la dex
+          json: j.json || '',
+          dexterite: 10,
         }));
+        console.log('PJs créés:', pjs);
         // Remplacer les PJ existants dans l'initiative
         setInitiative(prev => [
           ...pjs,
@@ -136,8 +165,7 @@ export default function CombatManager() {
     } else {
       setSelectedPlayerGroup(null);
     }
-    // eslint-disable-next-line
-  }, [selectedPlayerGroupId]);
+  }, [selectedPlayerGroupId, playerGroups]);
 
   // Filtrage des monstres
   const monstresFiltres = MONSTRES_DATABASE.filter(monstre => {
@@ -172,7 +200,16 @@ export default function CombatManager() {
   };
 
   // Calcul de la difficulté
-  const difficulte = calculerDifficulte(monstresSelectionnes, nombrePJ, niveauPJ);
+  const difficulte = useMemo(() => {
+    if (selectedPlayerGroup) {
+      const nombrePJ = selectedPlayerGroup.joueurs.length;
+      const niveauMoyen = Math.round(
+        selectedPlayerGroup.joueurs.reduce((acc, j) => acc + j.niveau, 0) / nombrePJ
+      );
+      return calculerDifficulte(monstresSelectionnes, nombrePJ, niveauMoyen);
+    }
+    return calculerDifficulte(monstresSelectionnes, nombrePJ, niveauPJ);
+  }, [selectedPlayerGroup, monstresSelectionnes, nombrePJ, niveauPJ]);
 
   // Sauvegarde de la rencontre
   const sauvegarderRencontre = () => {
@@ -543,77 +580,126 @@ export default function CombatManager() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Colonne gauche : Préparation */}
         <div className="md:w-1/3 w-full bg-white border-r border-gray-200 p-4 overflow-y-auto flex flex-col gap-6">
-          {/* Configuration du groupe */}
-          <section className="bg-gray-50 rounded-lg shadow p-4 border border-gray-200">
+          {/* Sélection du groupe de joueurs */}
+          <section className="bg-gray-50 rounded-lg shadow p-4 border border-gray-200 mb-4">
             <h2 className="text-lg font-bold mb-2">Groupe de joueurs</h2>
-            <div className="flex items-center gap-2 mb-2">
-              <select
-                value={selectedPlayerGroupId}
-                onChange={e => setSelectedPlayerGroupId(e.target.value)}
-                className="p-2 border rounded"
-              >
-                <option value="">-- Aucun groupe sélectionné --</option>
-                {playerGroups.map(g => (
-                  <option key={g.id} value={g.id}>{g.nom}</option>
-                ))}
-              </select>
-              {selectedPlayerGroup && (
-                <button
-                  className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
-                  onClick={() => setSelectedPlayerGroupId('')}
-                >
-                  Désélectionner
-                </button>
-              )}
-            </div>
-            {selectedPlayerGroup && (
-              <div className="bg-white border rounded p-2 flex flex-wrap gap-2">
-                {selectedPlayerGroup.joueurs.map(j => (
-                  <div key={j.id} className="flex items-center gap-2 bg-gray-100 rounded px-2 py-1">
-                    {j.avatar ? (
-                      <img src={j.avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
-                    ) : (
-                      <span className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-gray-500">PJ</span>
-                    )}
-                    <span className="font-medium">{j.nom}</span>
-                    <span className="text-xs text-gray-500">Niv {j.niveau}</span>
-                    <span className="text-xs text-gray-500">PV {j.pv}/{j.pvMax}</span>
-                    <span className="text-xs text-gray-500">CA {j.ca}</span>
-                    <span className="text-xs text-gray-500">Init {j.initiative}</span>
-                    {j.classes && <span className="text-xs text-gray-500">{j.classes}</span>}
+            {isLoadingGroups ? (
+              <div className="text-center py-4 text-gray-500">Chargement des groupes...</div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <select
+                    value={selectedPlayerGroupId}
+                    onChange={e => setSelectedPlayerGroupId(e.target.value)}
+                    className="p-2 border rounded w-full"
+                  >
+                    <option value="">-- Aucun groupe sélectionné --</option>
+                    {playerGroups.map(g => (
+                      <option key={g.id} value={g.id}>{g.nom}</option>
+                    ))}
+                  </select>
+                  {selectedPlayerGroup && (
+                    <button
+                      className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs whitespace-nowrap"
+                      onClick={() => setSelectedPlayerGroupId('')}
+                    >
+                      Désélectionner
+                    </button>
+                  )}
+                </div>
+                {selectedPlayerGroup && (
+                  <div className="bg-white border rounded p-2 flex flex-wrap gap-2">
+                    {selectedPlayerGroup.joueurs.map(j => (
+                      <div key={j.id} className="flex items-center gap-2 bg-gray-100 rounded px-2 py-1">
+                        {j.avatar ? (
+                          <img src={j.avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                        ) : (
+                          <span className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-gray-500">PJ</span>
+                        )}
+                        <span className="font-medium">{j.nom}</span>
+                        <span className="text-xs text-gray-500">Niv {j.niveau}</span>
+                        <span className="text-xs text-gray-500">PV {j.pv}/{j.pvMax}</span>
+                        <span className="text-xs text-gray-500">CA {j.ca}</span>
+                        <span className="text-xs text-gray-500">Init {j.initiative}</span>
+                        {j.classes && <span className="text-xs text-gray-500">{j.classes}</span>}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+                {playerGroups.length === 0 && (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 mb-2">Aucun groupe de joueurs disponible</p>
+                    <button
+                      onClick={() => {
+                        const testGroup = {
+                          id: Date.now().toString(),
+                          nom: 'Groupe de test',
+                          joueurs: [
+                            {
+                              id: Date.now().toString() + '-1',
+                              nom: 'Joueur 1',
+                              niveau: 5,
+                              pvMax: 40,
+                              pv: 40,
+                              ca: 15,
+                              initiative: 2,
+                              classes: 'Guerrier 5'
+                            },
+                            {
+                              id: Date.now().toString() + '-2',
+                              nom: 'Joueur 2',
+                              niveau: 5,
+                              pvMax: 35,
+                              pv: 35,
+                              ca: 14,
+                              initiative: 3,
+                              classes: 'Mage 5'
+                            }
+                          ]
+                        };
+                        localStorage.setItem('dnd-groupes-joueurs', JSON.stringify([testGroup]));
+                        window.location.reload();
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Créer un groupe de test
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
 
-          <section className="bg-gray-50 rounded-lg shadow p-4 border border-gray-200">
-            <h2 className="text-lg font-bold mb-2">Configuration du groupe</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Nombre de PJ</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={nombrePJ}
-                  onChange={e => setNombrePJ(parseInt(e.target.value) || 1)}
-                  className="w-full p-2 border rounded-md"
-                />
+          {/* Configuration manuelle du groupe (à masquer si un groupe est sélectionné) */}
+          {!selectedPlayerGroup && (
+            <section className="bg-gray-50 rounded-lg shadow p-4 border border-gray-200">
+              <h2 className="text-lg font-bold mb-2">Configuration du groupe</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Nombre de PJ</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="8"
+                    value={nombrePJ}
+                    onChange={e => setNombrePJ(parseInt(e.target.value) || 1)}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Niveau des PJ</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={niveauPJ}
+                    onChange={e => setNiveauPJ(parseInt(e.target.value) || 1)}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Niveau des PJ</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={niveauPJ}
-                  onChange={e => setNiveauPJ(parseInt(e.target.value) || 1)}
-                  className="w-full p-2 border rounded-md"
-                />
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Sélection des monstres */}
           <section className="bg-gray-50 rounded-lg shadow p-4 border border-gray-200">

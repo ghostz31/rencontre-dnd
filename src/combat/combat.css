@@ -1,0 +1,287 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+
+:root {
+  --bento-bg: #f7f7f9;
+  --bento-card: #fff;
+  --bento-shadow: 0 2px 12px #0001, 0 1.5px 4px #a67c5233;
+  --bento-border: #e3e3e3;
+  --bento-accent: #c28840;
+  --bento-accent2: #3a2c1a;
+  --bento-green: #7bbfa3;
+  --bento-blue: #b3d0e7;
+  --bento-text: #232323;
+  --bento-muted: #b6a48a;
+}
+
+body, .combat-parchment-bg {
+  background: var(--bento-bg) !important;
+  font-family: 'Nunito', Arial, sans-serif;
+  color: var(--bento-text);
+}
+
+.combat-main-layout {
+  display: flex;
+  gap: 32px;
+  padding: 40px 0;
+  justify-content: center;
+}
+@media (min-width: 901px) {
+  .combat-left-panel {
+    flex: 0 0 70%;
+    min-width: 400px;
+  }
+  .combat-right-panel {
+    flex: 0 0 30%;
+    min-width: 320px;
+  }
+}
+@media (max-width: 900px) {
+  .combat-main-layout {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 0;
+  }
+  .combat-left-panel, .combat-right-panel {
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.combat-table, .combat-card, .combat-sidebar, .combat-right-panel, .combatant-card {
+  background: var(--bento-card);
+  border-radius: 16px;
+  box-shadow: var(--bento-shadow);
+  border: 1.5px solid var(--bento-border);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+.combat-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  font-size: 1.08em;
+}
+.combat-table th, .combat-table td {
+  text-align: left;
+  vertical-align: middle;
+  max-width: 200px;
+  min-width: 80px;
+  padding: 10px 8px;
+}
+.combat-table th:first-child, .combat-table td:first-child {
+  text-align: left;
+  min-width: 140px;
+}
+.combat-table th {
+  color: var(--bento-accent2);
+  font-weight: 700;
+  font-size: 1.1em;
+  letter-spacing: 0.02em;
+  font-family: 'Nunito', Arial, sans-serif;
+}
+.combat-table tr {
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+.combat-table tr:hover {
+  background: var(--bento-blue);
+  box-shadow: 0 2px 8px #b3d0e733;
+}
+
+.combatant-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.combatant-card.selected, .combat-sidebar-item.combatant-active-row {
+  border: 2.5px solid var(--bento-accent);
+  background: var(--bento-blue);
+  box-shadow: 0 4px 16px #b3d0e755;
+}
+
+.combat-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+  background: var(--bento-card);
+  border-radius: 14px;
+  box-shadow: var(--bento-shadow);
+  border: 1.5px solid var(--bento-border);
+}
+.combat-sidebar-item {
+  padding: 10px 16px;
+  border-radius: 10px;
+  transition: background 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  color: var(--bento-text);
+  font-family: 'Nunito', Arial, sans-serif;
+}
+.combat-sidebar-item:hover {
+  background: var(--bento-green);
+  color: #fff;
+  box-shadow: 0 2px 8px #7bbfa355;
+}
+
+.combat-btn {
+  background: var(--bento-accent);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 22px;
+  font-size: 1.08em;
+  font-weight: 700;
+  font-family: 'Nunito', Arial, sans-serif;
+  box-shadow: 0 2px 8px #a67c5233;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+  outline: none;
+  white-space: normal;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+.combat-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 4px #a67c5233;
+}
+.combat-btn.home-btn {
+  background: linear-gradient(90deg, var(--bento-blue) 60%, var(--bento-green) 100%);
+  color: var(--bento-accent2);
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  box-shadow: 0 2px 8px #7bbfa355;
+}
+.combat-btn.home-btn:active {
+  background: var(--bento-green);
+  color: #fff;
+}
+
+.combat-input {
+  border: 1.5px solid var(--bento-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 1em;
+  background: #fff;
+  color: var(--bento-text);
+  outline: none;
+  font-family: 'Nunito', Arial, sans-serif;
+  transition: border 0.15s, box-shadow 0.15s;
+}
+.combat-input:focus {
+  border: 1.5px solid var(--bento-accent);
+  box-shadow: 0 2px 8px #a67c5233;
+}
+
+.combat-right-panel {
+  background: var(--bento-card);
+  border-radius: 16px;
+  box-shadow: var(--bento-shadow);
+  border: 1.5px solid var(--bento-border);
+  padding: 18px 20px;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.combat-right-panel iframe {
+  width: 100% !important;
+  height: 85vh !important;
+  min-height: 80vh !important;
+  border: 2px solid var(--bento-accent);
+  border-radius: 12px;
+  background: #fff;
+  display: block;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Nunito', Arial, sans-serif;
+  color: var(--bento-accent2);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+* {
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, border 0.15s;
+}
+
+.combat-parchment-bg {
+  background: var(--bento-bg) !important;
+  min-height: 100vh;
+  font-family: 'Nunito', Arial, sans-serif;
+}
+
+.combatant-active-row {
+  border-left: 6px solid var(--bento-accent) !important;
+  background: var(--bento-blue) !important;
+  box-shadow: 0 2px 8px #b3d0e733;
+}
+
+/* Empêche la coupure du texte dans les cellules, boutons, cartes */
+.combat-table th,
+.combat-table td,
+.combat-card,
+.combat-btn,
+.combat-sidebar-item,
+.combatant-card,
+.combat-input,
+.combat-right-panel,
+.combat-monster-summary,
+.combat-monster-header,
+.combat-monster-sub,
+.combat-monster-stat,
+.combat-monster-carac {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  word-break: break-word !important;
+}
+
+.combat-table th,
+.combat-table td {
+  max-width: 400px;
+  min-width: 60px;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.combat-card,
+.combat-sidebar-item,
+.combatant-card {
+  word-break: break-word;
+  white-space: normal;
+}
+
+.combat-left-panel header {
+  padding-left: 24px;
+  padding-right: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.combat-left-panel > div:first-child {
+  padding-left: 24px;
+  padding-right: 12px;
+}
+
+/* Supprimer les spinners des champs number */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+} 
